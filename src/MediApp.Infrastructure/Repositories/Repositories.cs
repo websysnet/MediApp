@@ -31,6 +31,9 @@ public class UsuarioRepository : IUsuarioRepository
 
     public async Task<bool> EmailExistsAsync(string email) =>
         await _context.Usuarios.AnyAsync(u => u.Email == email);
+
+    public async Task SaveChangesAsync() =>
+        await _context.SaveChangesAsync();
 }
 
 public class DoctorRepository : IDoctorRepository

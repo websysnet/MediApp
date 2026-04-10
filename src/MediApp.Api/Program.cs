@@ -34,9 +34,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseInMemoryDatabase("MediAppDB"));
 
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
@@ -76,6 +75,7 @@ using (var scope = app.Services.CreateScope())
             Activo = true
         };
         await userRepo.AddAsync(adminUser);
+        await userRepo.SaveChangesAsync();
         Console.WriteLine("Admin user created: admin@mediapp.com / admin123");
     }
 }

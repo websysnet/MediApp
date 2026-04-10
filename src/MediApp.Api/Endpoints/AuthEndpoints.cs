@@ -23,8 +23,7 @@ public static class AuthEndpoints
 
     private static async Task<IResult> Register(
         [FromBody] RegisterRequest request,
-        IUsuarioRepository usuarioRepo,
-        IDoctorRepository doctorRepo)
+        IUsuarioRepository usuarioRepo)
     {
         if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
             return Results.BadRequest("Email y contraseña son requeridos");
@@ -47,17 +46,17 @@ public static class AuthEndpoints
         };
 
         await usuarioRepo.AddAsync(usuario);
-        await usuarioRepo.UpdateAsync(usuario);
+        await usuarioRepo.SaveChangesAsync();
 
         return Results.Created($"/api/auth/me", new { usuario.Id, usuario.Email, usuario.Rol });
     }
 
-    private static IResult Login(
+    private static async Task<IResult> Login(
         [FromBody] LoginRequest request,
         IUsuarioRepository usuarioRepo,
         IConfiguration configuration)
     {
-        var usuario = usuarioRepo.GetByEmailAsync(request.Email).Result;
+        var usuario = await usuarioRepo.GetByEmailAsync(request.Email);
         if (usuario == null || !BCrypt.Net.BCrypt.Verify(request.Password, usuario.PasswordHash))
             return Results.Unauthorized();
 

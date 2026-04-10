@@ -11,6 +11,7 @@ public interface IUsuarioRepository
     Task AddAsync(Usuario usuario);
     Task UpdateAsync(Usuario usuario);
     Task<bool> EmailExistsAsync(string email);
+    Task SaveChangesAsync();
 }
 
 public interface IDoctorRepository
