@@ -1,0 +1,155 @@
+@page "/reservar"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@using System.Text.Json
+
+<h2>Reservar Nueva Cita</h2>
+
+@if (Doctores == null)
+{
+    <p>Cargando doctores...</p>
+}
+else
+{
+    <div class="form-group">
+        <label>Seleccionar Doctor</label>
+        <select @bind="DoctorId" class="form-control">
+            <option value="0">Seleccione un doctor</option>
+            @foreach (var d in Doctores)
+            {
+                <option value="@d.Id">@d.Usuario?.Nombre @d.Usuario?.Apellido - @d.Especialidad</option>
+            }
+        </select>
+    </div>
+
+    @if (DoctorId > 0)
+    {
+        <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" @bind="Fecha" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        </div>
+
+        @if (Fecha != default)
+        {
+            <button class="btn btn-secondary mb-3" @onclick="CargarHorarios">Ver Horarios Disponibles</button>
+
+            @if (Horarios != null && Horarios.Any())
+            {
+                <div class="form-group">
+                    <label>Horario Disponible</label>
+                    <select @bind="HorarioSeleccionado" class="form-control">
+                        <option value="">Seleccione un horario</option>
+                        @foreach (var h in Horarios)
+                        {
+                            <option value="@h">@h</option>
+                        }
+                    </select>
+                </div>
+            }
+        }
+
+        <div class="form-group">
+            <label>Motivo de la Consulta</label>
+            <textarea @bind="Motivo" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Tipo de Consulta</label>
+            <select @bind="TipoConsulta" class="form-control">
+                <option value="Presencial">Presencial</option>
+                <option value="Virtual">Virtual</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary" @onclick="ReservarCita" disabled="@(!PuedeReservar)">Reservar Cita</button>
+    }
+
+    @if (!string.IsNullOrEmpty(Mensaje))
+    {
+        <div class="alert @(EsExito ? "alert-success" : "alert-danger")">@Mensaje</div>
+    }
+}
+
+@code {
+    List<DoctorDto>? Doctores;
+    List<string>? Horarios;
+    int DoctorId;
+    DateTime Fecha;
+    string? HorarioSeleccionado;
+    string Motivo = "";
+    string TipoConsulta = "Presencial";
+    string Mensaje = "";
+    bool EsExito;
+
+    bool PuedeReservar => DoctorId > 0 && Fecha != default && !string.IsNullOrEmpty(HorarioSeleccionado);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Doctores = await Http.GetFromJsonAsync<List<DoctorDto>>("http://localhost:5004/api/doctores");
+    }
+
+    async Task CargarHorarios()
+    {
+        if (DoctorId > 0 && Fecha != default)
+        {
+            var result = await Http.GetFromJsonAsync<DisponibilidadDto>($"http://localhost:5004/api/citas/disponibilidad?doctorId={DoctorId}&fecha={Fecha:yyyy-MM-dd}");
+            if (result?.Horarios != null)
+            {
+                Horarios = result.Horarios;
+            }
+        }
+    }
+
+    async Task ReservarCita()
+    {
+        if (!PuedeReservar) return;
+
+        var parts = HorarioSeleccionado!.Split(':');
+        var hora = int.Parse(parts[0]);
+        var minuto = int.Parse(parts[1]);
+        var fechaHora = new DateTime(Fecha.Year, Fecha.Month, Fecha.Day, hora, minuto, 0);
+
+        try
+        {
+            await Http.PostAsJsonAsync("http://localhost:5004/api/citas", new
+            {
+                doctorId = DoctorId,
+                fechaHora = fechaHora.ToString("o"),
+                motivo = Motivo,
+                tipoConsulta = TipoConsulta
+            });
+            Mensaje = "Cita reservada exitosamente!";
+            EsExito = true;
+            await Task.Delay(1500);
+            Nav.NavigateTo("/citas");
+        }
+        catch
+        {
+            Mensaje = "Error al reservar la cita.";
+            EsExito = false;
+        }
+    }
+
+    class DoctorDto
+    {
+        public int Id { get; set; }
+        public UsuarioSimpleDto? Usuario { get; set; }
+        public string Especialidad { get; set; } = "";
+    }
+    class UsuarioSimpleDto { public string? Nombre { get; set; } public string? Apellido { get; set; } }
+    class DisponibilidadDto { public List<string>? Horarios { get; set; } }
+}
+
+<style>
+    h2 { margin-bottom: 1.5rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+    .form-control { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; }
+    .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-secondary { background: #764ba2; color: white; }
+    .alert { padding: 1rem; margin-top: 1rem; border-radius: 5px; }
+    .alert-success { background: #d4edda; color: #155724; }
+    .alert-danger { background: #f8d7da; color: #721c24; }
+    .mb-3 { margin-bottom: 1rem; }
+</style>

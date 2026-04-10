@@ -1,0 +1,134 @@
+@page "/"
+@inject AuthService Auth
+@inject NavigationManager Nav
+@inject ApiService Api
+
+<div class="dashboard">
+    @if (IsLoading)
+    {
+        <div class="loading">Cargando...</div>
+    }
+    else if (Usuario == null)
+    {
+        <div class="login-prompt">
+            <h2>Bienvenido a MediApp</h2>
+            <p>Sistema de Gestión de Citas Médicas</p>
+            <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("/login")'>Iniciar Sesión</button>
+            <button class="btn btn-secondary" @onclick='() => Nav.NavigateTo("/register")'>Registrarse</button>
+        </div>
+    }
+    else
+    {
+        <div class="user-info">
+            <h2>Bienvenido, @Usuario.Nombre @Usuario.Apellido</h2>
+            <span class="badge @GetRolBadgeClass()">@GetRolNombre()</span>
+            <button class="btn btn-outline" @onclick="Logout">Cerrar Sesión</button>
+        </div>
+
+        <div class="dashboard-grid">
+            @if (Usuario.Rol == 1)
+            {
+                <div class="card" @onclick='() => Nav.NavigateTo("/citas")'>
+                    <h3>📅 Mis Citas</h3>
+                    <p>Ver y gestionar tus citas médicas</p>
+                </div>
+                <div class="card" @onclick='() => Nav.NavigateTo("/reservar")'>
+                    <h3>➕ Reservar Cita</h3>
+                    <p>Agendar nueva cita con un doctor</p>
+                </div>
+                <div class="card" @onclick='() => Nav.NavigateTo("/historial")'>
+                    <h3>📋 Historial</h3>
+                    <p>Ver historial médico y recetas</p>
+                </div>
+            }
+            else if (Usuario.Rol == 2)
+            {
+                <div class="card" @onclick='() => Nav.NavigateTo("/doctor/citas")'>
+                    <h3>📅 Citas del Día</h3>
+                    <p>Ver citas programadas hoy</p>
+                </div>
+                <div class="card" @onclick='() => Nav.NavigateTo("/doctor/pacientes")'>
+                    <h3>👥 Mis Pacientes</h3>
+                    <p>Lista de pacientes atendidos</p>
+                </div>
+            }
+            else if (Usuario.Rol == 3)
+            {
+                <div class="card" @onclick='() => Nav.NavigateTo("/admin/doctores")'>
+                    <h3>👨‍⚕️ Doctores</h3>
+                    <p>Gestionar doctores del sistema</p>
+                </div>
+                <div class="card" @onclick='() => Nav.NavigateTo("/admin/citas")'>
+                    <h3>📅 Todas las Citas</h3>
+                    <p>Ver todas las citas del sistema</p>
+                </div>
+                <div class="card" @onclick='() => Nav.NavigateTo("/admin/pagos")'>
+                    <h3>💰 Pagos</h3>
+                    <p>Ver registros de pagos</p>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private UsuarioDto? Usuario;
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var isLoggedIn = await Auth.IsLoggedInAsync();
+        if (isLoggedIn)
+        {
+            Usuario = await Auth.GetCurrentUserAsync();
+        }
+        IsLoading = false;
+    }
+
+    string GetRolNombre() => Usuario?.Rol switch
+    {
+        1 => "Paciente",
+        2 => "Doctor",
+        3 => "Administrador",
+        _ => "Usuario"
+    };
+
+    string GetRolBadgeClass() => Usuario?.Rol switch
+    {
+        1 => "badge-patient",
+        2 => "badge-doctor",
+        3 => "badge-admin",
+        _ => ""
+    };
+
+    async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Usuario = null;
+        Nav.NavigateTo("/");
+    }
+}
+
+<style>
+    .dashboard { padding: 2rem; min-height: 100vh; background: #f5f7fa; }
+    .loading { text-align: center; padding: 2rem; font-size: 1.2rem; }
+    .login-prompt { text-align: center; padding: 3rem; }
+    .login-prompt h2 { font-size: 2rem; color: #333; margin-bottom: 1rem; }
+    .login-prompt p { color: #666; margin-bottom: 2rem; }
+    .login-prompt .btn { margin: 0.5rem; padding: 0.75rem 2rem; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-secondary { background: #764ba2; color: white; }
+    .btn-outline { background: transparent; border: 1px solid #667eea; color: #667eea; }
+    .user-info { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+    .user-info h2 { margin: 0; }
+    .badge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem; }
+    .badge-patient { background: #e3f2fd; color: #1976d2; }
+    .badge-doctor { background: #e8f5e9; color: #388e3c; }
+    .badge-admin { background: #fff3e0; color: #f57c00; }
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+    .card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-5px); }
+    .card h3 { margin: 0 0 0.5rem 0; color: #333; }
+    .card p { color: #666; margin: 0; }
+</style>

@@ -1,0 +1,92 @@
+@page "/citas"
+@inject ApiService Api
+@inject NavigationManager Nav
+
+<h2>Mis Citas</h2>
+
+@if (CitasList == null)
+{
+    <p>Cargando...</p>
+}
+else if (!CitasList.Any())
+{
+    <p>No tienes citas programadas.</p>
+    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("/reservar")'>Reservar Nueva Cita</button>
+}
+else
+{
+    <div class="citas-list">
+        @foreach (var cita in CitasList)
+        {
+            <div class="cita-card">
+                <div class="cita-header">
+                    <strong>@cita.Doctor?.Nombre @cita.Doctor?.Apellido</strong>
+                    <span class="badge @GetEstadoClass(cita.Estado)">@GetEstadoNombre(cita.Estado)</span>
+                </div>
+                <p>Especialidad: @cita.Doctor?.Especialidad</p>
+                <p>📅 @DateTime.Parse(cita.FechaHora.ToString()).ToString("dd/MM/yyyy HH:mm")</p>
+                @if (!string.IsNullOrEmpty(cita.Motivo))
+                {
+                    <p>Motivo: @cita.Motivo</p>
+                }
+                @if (cita.Estado == 1)
+                {
+                    <button class="btn btn-danger btn-sm" @onclick="() => Cancelar(cita.Id)">Cancelar</button>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    List<dynamic>? CitasList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CitasList = await Api.GetAsync<List<dynamic>>("/api/citas");
+    }
+
+    string GetEstadoNombre(int estado) => estado switch
+    {
+        1 => "Pendiente",
+        2 => "Confirmada",
+        3 => "Completada",
+        4 => "Cancelada",
+        5 => "No Asistió",
+        _ => "Desconocido"
+    };
+
+    string GetEstadoClass(int estado) => estado switch
+    {
+        1 => "badge-pending",
+        2 => "badge-confirmed",
+        3 => "badge-completed",
+        4 => "badge-cancelled",
+        5 => "badge-missed",
+        _ => ""
+    };
+
+    async Task Cancelar(int id)
+    {
+        await Api.DeleteAsync($"/api/citas/{id}");
+        CitasList = await Api.GetAsync<List<dynamic>>("/api/citas");
+    }
+}
+
+<style>
+    h2 { margin-bottom: 1.5rem; }
+    .citas-list { display: flex; flex-direction: column; gap: 1rem; }
+    .cita-card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .cita-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .badge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem; }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-confirmed { background: #d4edda; color: #155724; }
+    .badge-completed { background: #cce5ff; color: #004085; }
+    .badge-cancelled { background: #f8d7da; color: #721c24; }
+    .badge-missed { background: #e2e3e5; color: #383d41; }
+    p { margin: 0.25rem 0; color: #666; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; }
+</style>
