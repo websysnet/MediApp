@@ -2,8 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/.NET-10.0-purple?style=for-the-badge&logo=.net" alt=".NET 10">
-  <img src="https://img.shields.io/badge/Blazor-WebAssembly-blue?style=for-the-badge&logo=blazor" alt="Blazor">
-  <img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Blazor-Interactive-blue?style=for-the-badge&logo=blazor" alt="Blazor">
   <img src="https://img.shields.io/badge/JWT-Authentication-green?style=for-the-badge&logo=json" alt="JWT">
 </p>
 
@@ -11,18 +10,18 @@
 
 ## 📋 Descripción
 
-**MediApp** es una aplicación web completa para la gestión de citas médicas, desarrollada con **.NET 10** y **Blazor Web**. Permite a pacientes reservar citas, a doctores gestionar sus horarios y audiencias, y a administradores gestionar el sistema completo.
+**MediApp** es una aplicación web para la gestión de citas médicas desarrollada con **.NET 10** y **Razor Components interactivos**. Permite a pacientes registrarse, iniciar sesión, gestionar citas, ver historias clínicas, generar recetas y registrar pagos.
 
 ### ✨ Características Principales
 
 | Módulo | Descripción |
 |--------|-------------|
-| 🔐 **Autenticación** | Registro e inicio de sesión con JWT |
-| 📅 **Citas** | Reserva, cancelación y gestión de citas |
-| 👨‍⚕️ **Doctores** | Gestión de doctores (solo Admin) |
-| 📋 **Historia Clínica** | Registro de diagnósticos y observaciones |
-| 💊 **Recetas** | Creación de recetas médicas con PDF |
-| 💳 **Pagos** | Registro de pagos por consultas |
+| 🔐 Autenticación | Registro e inicio de sesión con JWT |
+| 📅 Citas | Reserva, actualización y cancelación de citas |
+| 👨‍⚕️ Doctores | Gestión de doctores (solo Admin) |
+| 📋 Historia Clínica | Registro y consulta de historias clínicas |
+| 💊 Recetas | Gestión y descarga de recetas |
+| 💳 Pagos | Registro de pagos por citas |
 
 ---
 
@@ -30,14 +29,14 @@
 
 ```
 MediApp/
-├── docker-compose.yml          # PostgreSQL + pgAdmin
-├── MediApp.sln                # Solución .NET
+├── docker-compose.yml          # PostgreSQL + pgAdmin (opcional)
+├── MediApp.slnx               # Solución .NET
 └── src/
     ├── MediApp.Domain/         # Entidades, Enums, Interfaces
-    ├── MediApp.Application/    # Servicios (reservado)
-    ├── MediApp.Infrastructure/ # EF Core, Repositorios
+    ├── MediApp.Application/    # Servicios y lógica de aplicación
+    ├── MediApp.Infrastructure/ # Repositorios y EF Core
     ├── MediApp.Api/           # API Minimal (.NET 10)
-    └── MediApp.Blazor/         # Frontend Blazor Web
+    └── MediApp.Blazor/        # Frontend Razor Components interactivos
 ```
 
 ---
@@ -46,24 +45,23 @@ MediApp/
 
 | Rol | Permisos |
 |-----|----------|
-| 🟢 **Paciente** | Registrarse, reservar/cancelar citas, ver historial, descargar recetas |
-| 🔵 **Doctor** | Ver citas, crear historia clínica y recetas |
-| 🔴 **Admin** | Gestionar doctores, ver todas las citas y pagos |
+| Paciente | Registrarse, iniciar sesión, ver/agendar/cancelar citas, historial y recetas |
+| Doctor | Ver citas asignadas, crear historia clínica y recetas |
+| Admin | Gestionar doctores, ver citas y pagos |
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
-| Tecnología | Versión | Uso |
-|------------|---------|-----|
-| **.NET** | 10.0 | Runtime |
-| **ASP.NET Core** | 10.0 | API Minimal |
-| **Blazor** | 10.0 | Frontend Web |
-| **Entity Framework Core** | 10.0 | ORM |
-| **PostgreSQL** | 16 | Base de datos |
-| **JWT** | - | Autenticación |
-| **BCrypt** | 4.0.3 | Hash de contraseñas |
-| **QuestPDF** | 2024.10.2 | Generación de PDFs |
+| Tecnología | Uso |
+|------------|-----|
+| .NET 10 | Backend y frontend |
+| ASP.NET Core Minimal API | Endpoints REST |
+| Razor Components interactivos | UI del cliente |
+| Entity Framework Core | Acceso a datos |
+| InMemoryDatabase | Persistencia en desarrollo local |
+| JWT | Autenticación |
+| BCrypt | Hash de contraseñas |
 
 ---
 
@@ -72,32 +70,26 @@ MediApp/
 ### Prerrequisitos
 
 - .NET 10 SDK
-- Docker (para PostgreSQL)
 
-### 1. Iniciar PostgreSQL
+> Nota: El proyecto actual usa una base de datos en memoria durante el desarrollo local. El `docker-compose.yml` está disponible para PostgreSQL/pgAdmin, pero no es necesario para ejecutar la app actualmente.
 
-```bash
-cd MediApp
-docker compose up -d
-```
-
-### 2. Ejecutar la API
+### 1. Ejecutar la API
 
 ```bash
 cd src/MediApp.Api
 dotnet run
 ```
 
-La API estará disponible en: `http://localhost:5004`
+La API se ejecuta por defecto en `http://localhost:5004`.
 
-### 3. Ejecutar el Frontend
+### 2. Ejecutar el Frontend
 
 ```bash
 cd src/MediApp.Blazor
 dotnet run
 ```
 
-El frontend estará disponible en: `http://localhost:5005`
+El frontend se ejecuta por defecto en `http://localhost:5128`.
 
 ---
 
@@ -107,87 +99,85 @@ El frontend estará disponible en: `http://localhost:5005`
 |-----|-------|------------|
 | Admin | `admin@mediapp.com` | `admin123` |
 
-> **Nota:** Los pacientes pueden registrarse desde la página de registro. Los doctores deben ser creados por un Administrador.
+> Los pacientes pueden registrarse en la UI. Los doctores se crean desde el backend con un usuario Admin.
 
 ---
 
 ## 📡 Endpoints de la API
 
-### 🔐 Autenticación
+### Autenticación
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | POST | `/api/auth/register` | Registrar nuevo paciente |
 | POST | `/api/auth/login` | Iniciar sesión |
-| GET | `/api/auth/me` | Obtener usuario actual |
+| GET | `/api/auth/me` | Obtener datos del usuario actual (requiere token) |
 
-### 👨‍⚕️ Doctores (Admin)
+### Doctores
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/api/doctores` | Listar doctores |
-| POST | `/api/doctores` | Crear doctor |
-| PUT | `/api/doctores/{id}` | Actualizar doctor |
-| DELETE | `/api/doctores/{id}` | Eliminar doctor |
+| GET | `/api/doctores/` | Listar doctores activos |
+| GET | `/api/doctores/{id}` | Obtener un doctor |
+| POST | `/api/doctores/` | Crear doctor (Admin) |
+| PUT | `/api/doctores/{id}` | Actualizar doctor (Admin) |
+| DELETE | `/api/doctores/{id}` | Desactivar doctor (Admin) |
+| PUT | `/api/doctores/{id}/horario` | Actualizar horario de doctor |
 
-### 📅 Citas
+### Citas
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | GET | `/api/citas` | Listar citas |
+| GET | `/api/citas/{id}` | Obtener cita |
 | POST | `/api/citas` | Crear cita |
 | PUT | `/api/citas/{id}` | Actualizar cita |
 | DELETE | `/api/citas/{id}` | Cancelar cita |
-| GET | `/api/citas/disponibilidad` | Horarios disponibles |
+| GET | `/api/citas/disponibilidad` | Consultar disponibilidad |
+| GET | `/api/citas/paciente/{pacienteId}` | Citas de un paciente |
+| GET | `/api/citas/doctor/{doctorId}` | Citas de un doctor |
 
-### 📋 Historia Clínica
+### Historia Clínica
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/api/historias/paciente/{id}` | Historial de paciente |
-| POST | `/api/historias` | Crear historia |
-| PUT | `/api/historias/{id}` | Actualizar historia |
+| GET | `/api/historias/paciente/{pacienteId}` | Historial de paciente |
+| GET | `/api/historias/{id}` | Obtener historia clínica |
+| POST | `/api/historias` | Crear historia clínica |
+| PUT | `/api/historias/{id}` | Actualizar historia clínica |
 
-### 💊 Recetas
+### Recetas
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/api/recetas/paciente/{id}` | Recetas del paciente |
+| GET | `/api/recetas/paciente/{pacienteId}` | Recetas de paciente |
+| GET | `/api/recetas/{id}` | Obtener receta |
 | POST | `/api/recetas` | Crear receta |
-| GET | `/api/recetas/{id}/pdf` | Descargar PDF |
+| GET | `/api/recetas/{id}/pdf` | Descargar receta en PDF |
 
-### 💳 Pagos
+### Pagos
+
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | GET | `/api/pagos` | Listar pagos |
+| GET | `/api/pagos/cita/{citaId}` | Pago de una cita |
 | POST | `/api/pagos` | Registrar pago |
 
 ---
 
-## 📊 Base de Datos
+## 📄 Rutas de la UI
 
-### Entidades Principales
-
-- **Usuario** - Email, PasswordHash, Nombre, Apellido, Rol
-- **Doctor** - Especialidad, Licencia, Horario, Precio
-- **Cita** - PacienteId, DoctorId, FechaHora, Estado
-- **HistoriaClinica** - PacienteId, DoctorId, Diagnóstico
-- **Receta** - HistoriaClinicaId, Medicamentos, Instrucciones
-- **Pago** - CitaId, Monto, Estado
-
----
-
-## 🎨 Interfaz de Usuario
-
-### Dashboard - Roles
-
-- **Paciente**: Mis Citas, Reservar Cita, Historial, Perfil
-- **Doctor**: Citas del Día, Mis Pacientes, Historial Clínico
-- **Admin**: Doctores, Todas las Citas, Pagos, Usuarios
+- `/login` — Iniciar sesión
+- `/register` — Registrarse
 
 ---
 
 ## 📝 Notas de Desarrollo
 
-- El proyecto usa **SQLite** por defecto para desarrollo local sin Docker
-- Para producción, cambiar a **PostgreSQL** en `appsettings.json`
-- Las recetas se generan como texto plano (puede mejorarse con QuestPDF)
-- El frontend usa HttpClient directo para simplificar la autenticación
+- El frontend usa `ApiService` y `AuthService` para consumir la API en `http://localhost:5004`.
+- La autenticación usa JWT y el token se aplica automáticamente en los headers de `HttpClient`.
+- Los datos se almacenan en memoria y se reinician al cerrar la aplicación.
+- El proyecto actual no depende de PostgreSQL para el desarrollo local.
 
 ---
 
