@@ -25,7 +25,7 @@ public static class DoctorEndpoints
 
     private static async Task<IResult> GetDoctores(IDoctorRepository repo)
     {
-        var doctores = await repo.GetActivosAsync();
+        var doctores = await repo.GetAllAsync();
         return Results.Ok(doctores.Select(d => new
         {
             d.Id,
