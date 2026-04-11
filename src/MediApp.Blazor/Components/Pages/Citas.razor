@@ -45,8 +45,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await Auth.RestoreAsync();
         CitasList = await Api.GetAsync<List<dynamic>>("/api/citas");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Auth.EnsureInitializedAsync();
+            CitasList = await Api.GetAsync<List<dynamic>>("/api/citas");
+        }
     }
 
     string GetEstadoNombre(int estado) => estado switch

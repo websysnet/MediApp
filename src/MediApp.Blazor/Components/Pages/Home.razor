@@ -78,13 +78,26 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Auth.RestoreAsync();
-        var isLoggedIn = await Auth.IsLoggedInAsync();
+        var isLoggedIn = Auth.CurrentToken != null;
         if (isLoggedIn)
         {
             Usuario = await Auth.GetCurrentUserAsync();
         }
         IsLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Auth.EnsureInitializedAsync();
+            var isLoggedIn = Auth.CurrentToken != null;
+            if (isLoggedIn && Usuario == null)
+            {
+                Usuario = await Auth.GetCurrentUserAsync();
+                StateHasChanged();
+            }
+        }
     }
 
     string GetRolNombre() => Usuario?.Rol switch

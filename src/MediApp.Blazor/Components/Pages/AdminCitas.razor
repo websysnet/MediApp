@@ -44,7 +44,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await Auth.RestoreAsync();
         var token = Auth.CurrentToken;
         var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5004/api/citas");
         if (!string.IsNullOrEmpty(token))
@@ -52,6 +51,21 @@ else
         var response = await Http.SendAsync(request);
         if (response.IsSuccessStatusCode)
             Citas = await response.Content.ReadFromJsonAsync<List<dynamic>>();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Auth.EnsureInitializedAsync();
+            var token = Auth.CurrentToken;
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5004/api/citas");
+            if (!string.IsNullOrEmpty(token))
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+                Citas = await response.Content.ReadFromJsonAsync<List<dynamic>>();
+        }
     }
 
     string GetEstadoNombre(int estado) => estado switch

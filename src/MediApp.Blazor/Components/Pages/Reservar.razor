@@ -87,8 +87,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await Auth.RestoreAsync();
         Doctores = await Http.GetFromJsonAsync<List<DoctorDto>>("http://localhost:5004/api/doctores");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Auth.EnsureInitializedAsync();
+            Doctores = await Http.GetFromJsonAsync<List<DoctorDto>>("http://localhost:5004/api/doctores");
+        }
     }
 
     async Task CargarHorarios()

@@ -54,12 +54,19 @@ public class AuthService
 
     public async Task RestoreAsync()
     {
-        var token = await _js.InvokeAsync<string?>("localStorage.getItem", "token");
-        if (!string.IsNullOrEmpty(token))
+        try
         {
-            _token = token;
-            _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            _api.SetToken(token);
+            var token = await _js.InvokeAsync<string?>("localStorage.getItem", "token");
+            if (!string.IsNullOrEmpty(token))
+            {
+                _token = token;
+                _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                _api.SetToken(token);
+            }
+        }
+        catch
+        {
+            // Ignorar errores de JS interop durante prerender
         }
     }
 
@@ -77,9 +84,28 @@ public class AuthService
 
     public async Task<bool> IsLoggedInAsync()
     {
-        if (_token == null)
-            await RestoreAsync();
         return !string.IsNullOrEmpty(_token);
+    }
+
+    public async Task EnsureInitializedAsync()
+    {
+        if (_token == null)
+        {
+            try
+            {
+                var token = await _js.InvokeAsync<string?>("localStorage.getItem", "token");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    _token = token;
+                    _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    _api.SetToken(token);
+                }
+            }
+            catch
+            {
+                // Ignorar durante prerender
+            }
+        }
     }
 }
 
