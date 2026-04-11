@@ -1,4 +1,5 @@
 @page "/login"
+@rendermode InteractiveServer
 @inject AuthService Auth
 @inject NavigationManager Nav
 
@@ -21,7 +22,7 @@
             <input type="password" @bind="Password" class="form-control" />
         </div>
         
-        <button class="btn btn-primary" @onclick="LoginClick" disabled="@IsLoading">
+        <button type="button" class="btn btn-primary" @onclick="LoginClick" disabled="@IsLoading">
             @(IsLoading ? "Ingresando..." : "Iniciar Sesión")
         </button>
         

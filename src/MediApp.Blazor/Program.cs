@@ -8,7 +8,11 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<HttpClient>(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5004") });
+builder.Services.AddScoped<HttpClient>(sp => 
+{
+    var http = new HttpClient { BaseAddress = new Uri("http://localhost:5004") };
+    return http;
+});
 
 var app = builder.Build();
 
@@ -19,7 +23,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();

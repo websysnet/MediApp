@@ -1,9 +1,12 @@
 @page "/admin/doctores"
+@rendermode InteractiveServer
 @inject HttpClient Http
+@inject AuthService Auth
+@using System.Net.Http.Json
 
 <h2>Gestión de Doctores</h2>
 
-<button class="btn btn-primary mb-3" @onclick="MostrarFormulario">+ Nuevo Doctor</button>
+<button type="button" class="btn btn-primary mb-3" @onclick="MostrarFormulario">+ Nuevo Doctor</button>
 
 @if (MostrarForm)
 {
@@ -33,8 +36,8 @@
             <label>Número de Licencia</label>
             <input @bind="NuevoDoctor.NumeroLicencia" class="form-control" />
         </div>
-        <button class="btn btn-primary" @onclick="CrearDoctor">Guardar</button>
-        <button class="btn btn-secondary" @onclick="() => MostrarForm = false">Cancelar</button>
+        <button type="button" class="btn btn-primary" @onclick="CrearDoctor">Guardar</button>
+        <button type="button" class="btn btn-secondary" @onclick="() => MostrarForm = false">Cancelar</button>
     </div>
 }
 
@@ -85,18 +88,26 @@ else
 
     async Task CargarDoctores()
     {
-        Doctores = await Http.GetFromJsonAsync<List<DoctorDto>>("http://localhost:5004/api/doctores");
+        var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5004/api/doctores");
+        if (!string.IsNullOrEmpty(Auth.CurrentToken))
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Auth.CurrentToken);
+        var response = await Http.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+            Doctores = await response.Content.ReadFromJsonAsync<List<DoctorDto>>();
     }
 
     void MostrarFormulario()
     {
-        NuevoDoctor = new DoctorCreateDto();
+       NuevoDoctor = new DoctorCreateDto();
         MostrarForm = true;
     }
 
     async Task CrearDoctor()
     {
-        await Http.PostAsJsonAsync("http://localhost:5004/api/doctores", NuevoDoctor);
+        var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5004/api/doctores") { Content = JsonContent.Create(NuevoDoctor) };
+        if (!string.IsNullOrEmpty(Auth.CurrentToken))
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Auth.CurrentToken);
+        await Http.SendAsync(request);
         MostrarForm = false;
         await CargarDoctores();
     }

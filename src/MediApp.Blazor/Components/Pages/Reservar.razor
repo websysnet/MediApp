@@ -1,5 +1,7 @@
 @page "/reservar"
+@rendermode InteractiveServer
 @inject HttpClient Http
+@inject AuthService Auth
 @inject NavigationManager Nav
 @using System.Text.Json
 
@@ -85,6 +87,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await Auth.RestoreAsync();
         Doctores = await Http.GetFromJsonAsync<List<DoctorDto>>("http://localhost:5004/api/doctores");
     }
 

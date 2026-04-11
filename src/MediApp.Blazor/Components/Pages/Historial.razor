@@ -1,0 +1,65 @@
+@page "/historial"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject AuthService Auth
+@inject NavigationManager Nav
+@using System.Net.Http.Json
+
+<h2>Mi Historial Médico</h2>
+
+@if (Historiales == null)
+{
+    <p>Cargando...</p>
+}
+else if (!Historiales.Any())
+{
+    <p>No tienes historial médico.</p>
+}
+else
+{
+    @foreach (var h in Historiales)
+    {
+        <div class="historial-card">
+            <div class="historial-header">
+                <strong>Dr. @h.Doctor?.Nombre @h.Doctor?.Apellido</strong>
+                <span class="fecha">@DateTime.Parse(h.Fecha.ToString()).ToString("dd/MM/yyyy")</span>
+            </div>
+            <p><strong>Especialidad:</strong> @h.Doctor?.Especialidad</p>
+            <p><strong>Diagnóstico:</strong> @h.Diagnostico</p>
+            @if (!string.IsNullOrEmpty(h.Observaciones))
+            {
+                <p><strong>Observaciones:</strong> @h.Observaciones</p>
+            }
+        </div>
+    }
+}
+
+@code {
+    List<dynamic>? Historiales;
+    UsuarioDto? Usuario;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.RestoreAsync();
+        Usuario = await Auth.GetCurrentUserAsync();
+        if (Usuario == null)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        var token = Auth.CurrentToken;
+        var request = new HttpRequestMessage(HttpMethod.Get, $"http://localhost:5004/api/historias/paciente/{Usuario.Id}");
+        if (!string.IsNullOrEmpty(token))
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await Http.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+            Historiales = await response.Content.ReadFromJsonAsync<List<dynamic>>();
+    }
+}
+
+<style>
+    .historial-card { background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .historial-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+    .fecha { color: #666; font-size: 0.9rem; }
+    p { margin: 0.25rem 0; }
+</style>

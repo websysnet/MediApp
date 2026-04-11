@@ -1,0 +1,84 @@
+@page "/admin/pagos"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject AuthService Auth
+@using System.Net.Http.Json
+
+<h2>Registro de Pagos</h2>
+
+@if (Pagos == null)
+{
+    <p>Cargando...</p>
+}
+else if (!Pagos.Any())
+{
+    <p>No hay pagos registrados.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>Cita</th>
+                <th>Monto</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pago in Pagos)
+            {
+                <tr>
+                    <td>@pago.Cita?.Paciente?.Nombre @pago.Cita?.Paciente?.Apellido</td>
+                    <td>@DateTime.Parse(pago.Cita?.FechaHora?.ToString()??"").ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>$@pago.Monto</td>
+                    <td>@DateTime.Parse(pago.FechaCreacion.ToString()).ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><span class="badge @GetEstadoClass(pago.Estado)">@GetEstadoNombre(pago.Estado)</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<dynamic>? Pagos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.RestoreAsync();
+        var token = Auth.CurrentToken;
+        var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5004/api/pagos");
+        if (!string.IsNullOrEmpty(token))
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await Http.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+            Pagos = await response.Content.ReadFromJsonAsync<List<dynamic>>();
+    }
+
+    string GetEstadoNombre(int estado) => estado switch
+    {
+        1 => "Pendiente",
+        2 => "Completado",
+        3 => "Rechazado",
+        _ => "Desconocido"
+    };
+
+    string GetEstadoClass(int estado) => estado switch
+    {
+        1 => "badge-pending",
+        2 => "badge-completed",
+        3 => "badge-cancelled",
+        _ => ""
+    };
+}
+
+<style>
+    .table { width: 100%; border-collapse: collapse; background: white; }
+    .table th, .table td { padding: 0.75rem; border: 1px solid #ddd; text-align: left; }
+    .table th { background: #f8f9fa; }
+    .badge { padding: 0.25rem 0.5rem; border-radius: 10px; font-size: 0.8rem; }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-completed { background: #d4edda; color: #155724; }
+    .badge-cancelled { background: #f8d7da; color: #721c24; }
+</style>

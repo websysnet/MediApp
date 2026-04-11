@@ -1,0 +1,88 @@
+@page "/admin/citas"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject AuthService Auth
+@using System.Net.Http.Json
+
+<h2>Todas las Citas</h2>
+
+@if (Citas == null)
+{
+    <p>Cargando...</p>
+}
+else if (!Citas.Any())
+{
+    <p>No hay citas registradas.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>Doctor</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cita in Citas)
+            {
+                <tr>
+                    <td>@cita.Paciente?.Nombre @cita.Paciente?.Apellido</td>
+                    <td>Dr. @cita.Doctor?.Nombre @cita.Doctor?.Apellido</td>
+                    <td>@DateTime.Parse(cita.FechaHora.ToString()).ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><span class="badge @GetEstadoClass(cita.Estado)">@GetEstadoNombre(cita.Estado)</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<dynamic>? Citas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.RestoreAsync();
+        var token = Auth.CurrentToken;
+        var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5004/api/citas");
+        if (!string.IsNullOrEmpty(token))
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await Http.SendAsync(request);
+        if (response.IsSuccessStatusCode)
+            Citas = await response.Content.ReadFromJsonAsync<List<dynamic>>();
+    }
+
+    string GetEstadoNombre(int estado) => estado switch
+    {
+        1 => "Pendiente",
+        2 => "Confirmada",
+        3 => "Completada",
+        4 => "Cancelada",
+        5 => "No Asistió",
+        _ => "Desconocido"
+    };
+
+    string GetEstadoClass(int estado) => estado switch
+    {
+        1 => "badge-pending",
+        2 => "badge-confirmed",
+        3 => "badge-completed",
+        4 => "badge-cancelled",
+        5 => "badge-missed",
+        _ => ""
+    };
+}
+
+<style>
+    .table { width: 100%; border-collapse: collapse; background: white; }
+    .table th, .table td { padding: 0.75rem; border: 1px solid #ddd; text-align: left; }
+    .table th { background: #f8f9fa; }
+    .badge { padding: 0.25rem 0.5rem; border-radius: 10px; font-size: 0.8rem; }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-confirmed { background: #d4edda; color: #155724; }
+    .badge-completed { background: #d1ecf1; color: #0c5460; }
+    .badge-cancelled { background: #f8d7da; color: #721c24; }
+    .badge-missed { background: #e2e3e5; color: #383d41; }
+</style>

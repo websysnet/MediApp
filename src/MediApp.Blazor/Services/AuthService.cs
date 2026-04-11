@@ -1,27 +1,38 @@
+using Microsoft.JSInterop;
+
 namespace MediApp.Blazor.Services;
 
 public class AuthService
 {
+    private readonly HttpClient _http;
     private readonly ApiService _api;
+    private readonly IJSRuntime _js;
 
-    public AuthService(ApiService api) => _api = api;
+    public AuthService(HttpClient http, ApiService api, IJSRuntime js)
+    {
+        _http = http;
+        _api = api;
+        _js = js;
+    }
 
     public event Action? OnAuthStateChanged;
 
     private string? _token;
     private UsuarioDto? _currentUser;
 
+    public string? CurrentToken => _token;
+
     public async Task<LoginResult?> LoginAsync(string email, string password)
     {
-        var http = new HttpClient { BaseAddress = new Uri("http://localhost:5004") };
-        var tempApi = new ApiService(http);
-        var result = await tempApi.PostAsync<LoginResult>("/api/auth/login", new { email, password });
+        var result = await _api.PostAsync<LoginResult>("/api/auth/login", new { email, password });
         
         if (result?.Token != null)
         {
             _token = result.Token;
             _currentUser = result.Usuario;
+            _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _token);
             _api.SetToken(_token);
+            await _js.InvokeVoidAsync("localStorage.setItem", "token", _token);
             OnAuthStateChanged?.Invoke();
         }
         return result;
@@ -29,9 +40,7 @@ public class AuthService
 
     public async Task RegisterAsync(string email, string password, string nombre, string apellido, string? telefono)
     {
-        var http = new HttpClient { BaseAddress = new Uri("http://localhost:5004") };
-        var tempApi = new ApiService(http);
-        await tempApi.PostAsync<object>("/api/auth/register", new { email, password, nombre, apellido, telefono });
+        await _api.PostAsync<object>("/api/auth/register", new { email, password, nombre, apellido, telefono });
     }
 
     public async Task LogoutAsync()
@@ -39,7 +48,19 @@ public class AuthService
         _token = null;
         _currentUser = null;
         _api.SetToken(null);
+        await _js.InvokeVoidAsync("localStorage.removeItem", "token");
         OnAuthStateChanged?.Invoke();
+    }
+
+    public async Task RestoreAsync()
+    {
+        var token = await _js.InvokeAsync<string?>("localStorage.getItem", "token");
+        if (!string.IsNullOrEmpty(token))
+        {
+            _token = token;
+            _http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            _api.SetToken(token);
+        }
     }
 
     public async Task<UsuarioDto?> GetCurrentUserAsync()
@@ -56,6 +77,8 @@ public class AuthService
 
     public async Task<bool> IsLoggedInAsync()
     {
+        if (_token == null)
+            await RestoreAsync();
         return !string.IsNullOrEmpty(_token);
     }
 }
