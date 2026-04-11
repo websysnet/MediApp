@@ -85,7 +85,7 @@ public static class DoctorEndpoints
         };
 
         await usuarioRepo.AddAsync(usuario);
-        await usuarioRepo.UpdateAsync(usuario);
+        await usuarioRepo.SaveChangesAsync();
 
         var doctor = new Doctor
         {
@@ -99,7 +99,7 @@ public static class DoctorEndpoints
         };
 
         await doctorRepo.AddAsync(doctor);
-        await doctorRepo.UpdateAsync(doctor);
+        await doctorRepo.SaveChangesAsync();
 
         return Results.Created($"/api/doctores/{doctor.Id}", new { doctor.Id, doctor.Especialidad });
     }

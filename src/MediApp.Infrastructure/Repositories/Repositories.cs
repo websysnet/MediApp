@@ -59,6 +59,9 @@ public class DoctorRepository : IDoctorRepository
 
     public async Task UpdateAsync(Doctor doctor) =>
         _context.Doctores.Update(doctor);
+
+    public async Task SaveChangesAsync() =>
+        await _context.SaveChangesAsync();
 }
 
 public class CitaRepository : ICitaRepository

@@ -22,6 +22,7 @@ public interface IDoctorRepository
     Task<IEnumerable<Doctor>> GetActivosAsync();
     Task AddAsync(Doctor doctor);
     Task UpdateAsync(Doctor doctor);
+    Task SaveChangesAsync();
 }
 
 public interface ICitaRepository

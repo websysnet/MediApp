@@ -1,5 +1,5 @@
 @page "/admin/doctores"
-@rendermode InteractiveServer
+
 @inject HttpClient Http
 @inject AuthService Auth
 @using System.Net.Http.Json
@@ -84,6 +84,15 @@ else
     protected override async Task OnInitializedAsync()
     {
         await CargarDoctores();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Auth.EnsureInitializedAsync();
+            await CargarDoctores();
+        }
     }
 
     async Task CargarDoctores()
