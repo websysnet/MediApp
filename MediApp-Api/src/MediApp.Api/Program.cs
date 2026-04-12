@@ -66,6 +66,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
     
     var userRepo = scope.ServiceProvider.GetRequiredService<IUsuarioRepository>();
+    var doctorRepo = scope.ServiceProvider.GetRequiredService<IDoctorRepository>();
     
     if (!await userRepo.EmailExistsAsync("admin@mediapp.com"))
     {
@@ -84,6 +85,50 @@ using (var scope = app.Services.CreateScope())
         await userRepo.SaveChangesAsync();
         Console.WriteLine("Admin user created: admin@mediapp.com / admin123");
     }
+    
+    var doctores = new (string nombre, string apellido, string email, string especialidad)[]
+    {
+        ("Juan", "Pérez", "juan.perez@mediapp.com", "Cardiología"),
+        ("María", "García", "maria.garcia@mediapp.com", "Pediatría"),
+        ("Carlos", "Rodríguez", "carlos.rodriguez@mediapp.com", "Dermatología"),
+        ("Ana", "López", "ana.lopez@mediapp.com", "Neurología"),
+        ("Pedro", "Martínez", "pedro.martinez@mediapp.com", "Ortopedia"),
+        ("Laura", "Sánchez", "laura.sanchez@mediapp.com", "Ginecología"),
+        ("Miguel", "Torres", "miguel.torres@mediapp.com", "Oftalmología"),
+        ("Sofia", "Ramírez", "sofia.ramirez@mediapp.com", "Psicología"),
+        ("Diego", "Hernández", "diego.hernandez@mediapp.com", "Urología"),
+        ("Carmen", "Jiménez", "carmen.jimenez@mediapp.com", "Endocrinología")
+    };
+    
+    foreach (var (nombre, apellido, email, especialidad) in doctores)
+    {
+        if (!await userRepo.EmailExistsAsync(email))
+        {
+            var usuario = new Usuario
+            {
+                Email = email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("doctor123"),
+                Nombre = nombre,
+                Apellido = apellido,
+                Telefono = $"555-{new Random().Next(1000, 9999)}",
+                Rol = RolUsuario.Doctor,
+                FechaCreacion = DateTime.UtcNow,
+                Activo = true,
+                Doctor = new Doctor
+                {
+                    Especialidad = especialidad,
+                    NumeroLicencia = $"LIC-{new Random().Next(10000, 99999)}",
+                    HorarioInicio = new TimeSpan(8, 0, 0),
+                    HorarioFin = new TimeSpan(17, 0, 0),
+                    DuracionConsultaMinutos = 30,
+                    PrecioConsulta = 50.00m + new Random().Next(0, 100)
+                }
+            };
+            await userRepo.AddAsync(usuario);
+        }
+    }
+    await userRepo.SaveChangesAsync();
+    Console.WriteLine("10 doctores creados");
 }
 
 app.UseCors("AllowAll");
