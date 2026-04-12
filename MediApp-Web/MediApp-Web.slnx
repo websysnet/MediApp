@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MediApp.Blazor/MediApp.Blazor.csproj" />
+  </Folder>
+</Solution>
