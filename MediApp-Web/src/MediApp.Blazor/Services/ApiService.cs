@@ -41,3 +41,27 @@ public class ApiService
     public async Task DeleteAsync(string endpoint) =>
         await _http.DeleteAsync(endpoint);
 }
+
+public class DashboardDto
+{
+    public int TotalPacientes { get; set; }
+    public int TotalDoctores { get; set; }
+    public int TotalCitas { get; set; }
+    public int CitasPendientes { get; set; }
+    public int CitasCompletadas { get; set; }
+    public List<DoctorStatsDto>? Doctores { get; set; }
+}
+
+public class DoctorStatsDto
+{
+    public int Id { get; set; }
+    public string Especialidad { get; set; } = "";
+    public bool Activo { get; set; }
+    public UsuarioInfoDto? Usuario { get; set; }
+}
+
+public class UsuarioInfoDto
+{
+    public string Nombre { get; set; } = "";
+    public string Apellido { get; set; } = "";
+}

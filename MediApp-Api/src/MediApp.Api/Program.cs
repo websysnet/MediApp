@@ -129,6 +129,42 @@ using (var scope = app.Services.CreateScope())
     }
     await userRepo.SaveChangesAsync();
     Console.WriteLine("10 doctores creados");
+    
+    var pacientes = new (string nombre, string apellido, string email, string telefono, DateTime fechaNacimiento)[]
+    {
+        ("Roberto", "Aguilar", "roberto.aguilar@email.com", "555-1234", new DateTime(1985, 3, 15)),
+        ("Elena", "Mendoza", "elena.mendoza@email.com", "555-2345", new DateTime(1990, 7, 22)),
+        ("Fernando", "Castillo", "fernando.castillo@email.com", "555-3456", new DateTime(1978, 11, 8)),
+        ("Isabel", "Ruiz", "isabel.ruiz@email.com", "555-4567", new DateTime(1995, 1, 30)),
+        ("Gabriel", "Navarro", "gabriel.navarro@email.com", "555-5678", new DateTime(1982, 5, 12)),
+        ("Patricia", "Vega", "patricia.vega@email.com", "555-6789", new DateTime(1988, 9, 25)),
+        ("Alberto", "Morales", "alberto.morales@email.com", "555-7890", new DateTime(1975, 12, 3)),
+        ("Natalia", "Flores", "natalia.flores@email.com", "555-8901", new DateTime(1992, 4, 18)),
+        ("Ricardo", "Reyes", "ricardo.reyes@email.com", "555-9012", new DateTime(1980, 8, 7)),
+        ("Veronica", "Herrera", "veronica.herrera@email.com", "555-0123", new DateTime(1998, 2, 14))
+    };
+    
+    foreach (var (nombre, apellido, email, telefono, fechaNacimiento) in pacientes)
+    {
+        if (!await userRepo.EmailExistsAsync(email))
+        {
+            var paciente = new Usuario
+            {
+                Email = email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("paciente123"),
+                Nombre = nombre,
+                Apellido = apellido,
+                Telefono = telefono,
+                Rol = RolUsuario.Paciente,
+                FechaNacimiento = fechaNacimiento,
+                FechaCreacion = DateTime.UtcNow,
+                Activo = true
+            };
+            await userRepo.AddAsync(paciente);
+        }
+    }
+    await userRepo.SaveChangesAsync();
+    Console.WriteLine("10 pacientes creados");
 }
 
 app.UseCors("AllowAll");

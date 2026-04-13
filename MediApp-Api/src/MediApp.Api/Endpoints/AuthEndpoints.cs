@@ -19,6 +19,9 @@ public static class AuthEndpoints
         group.MapPost("/register", Register);
         group.MapPost("/login", Login);
         group.MapGet("/me", GetMe).RequireAuthorization();
+        group.MapGet("/pacientes", GetPacientes).RequireAuthorization();
+        group.MapGet("/doctores", GetDoctores).RequireAuthorization();
+        group.MapGet("/dashboard", GetDashboardStats).RequireAuthorization();
     }
 
     private static async Task<IResult> Register(
@@ -114,7 +117,91 @@ public static class AuthEndpoints
             usuario.Nombre,
             usuario.Apellido,
             usuario.Telefono,
+            usuario.FechaNacimiento,
             usuario.Rol
+        });
+    }
+    
+    private static async Task<IResult> GetPacientes(
+        [FromServices] IUsuarioRepository usuarioRepo,
+        HttpContext context)
+    {
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (userRole != "Admin") return Results.Forbid();
+        
+        var pacientes = await usuarioRepo.GetAllAsync();
+        var pacientesList = pacientes.Where(u => u.Rol == RolUsuario.Paciente).Select(p => new
+        {
+            p.Id,
+            p.Email,
+            p.Nombre,
+            p.Apellido,
+            p.Telefono,
+            p.FechaNacimiento,
+            p.FechaCreacion,
+            p.Activo
+        });
+        
+        return Results.Ok(pacientesList);
+    }
+    
+    private static async Task<IResult> GetDoctores(
+        [FromServices] IUsuarioRepository usuarioRepo,
+        HttpContext context)
+    {
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (userRole != "Admin") return Results.Forbid();
+        
+        var usuarios = await usuarioRepo.GetAllAsync();
+        var doctores = usuarios.Where(u => u.Rol == RolUsuario.Doctor).Select(u => new
+        {
+            u.Id,
+            u.Email,
+            u.Nombre,
+            u.Apellido,
+            u.Telefono,
+            u.FechaCreacion,
+            u.Activo,
+            Doctor = u.Doctor != null ? new
+            {
+                u.Doctor.Especialidad,
+                u.Doctor.NumeroLicencia,
+                u.Doctor.PrecioConsulta
+            } : null
+        });
+        
+        return Results.Ok(doctores);
+    }
+    
+    private static async Task<IResult> GetDashboardStats(
+        [FromServices] IUsuarioRepository usuarioRepo,
+        [FromServices] IDoctorRepository doctorRepo,
+        [FromServices] ICitaRepository citaRepo,
+        HttpContext context)
+    {
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (userRole != "Admin") return Results.Forbid();
+        
+        var usuarios = await usuarioRepo.GetAllAsync();
+        var doctores = await doctorRepo.GetAllAsync();
+        var citas = await citaRepo.GetAllAsync();
+        
+        var usuarioList = usuarios.ToList();
+        
+        return Results.Ok(new
+        {
+            TotalPacientes = usuarioList.Count(u => u.Rol == RolUsuario.Paciente),
+            TotalDoctores = usuarioList.Count(u => u.Rol == RolUsuario.Doctor),
+            TotalCitas = citas.Count(),
+            CitasPendientes = citas.Count(c => c.Estado == EstadoCita.Pendiente),
+            CitasCompletadas = citas.Count(c => c.Estado == EstadoCita.Completada),
+            doctores = doctores.Select(d => new
+            {
+                d.Id,
+                d.Especialidad,
+                d.Activo,
+                Usuario = new { d.Usuario.Nombre, d.Usuario.Apellido }
+            })
         });
     }
 }
