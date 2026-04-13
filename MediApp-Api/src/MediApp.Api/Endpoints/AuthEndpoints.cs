@@ -22,6 +22,8 @@ public static class AuthEndpoints
         group.MapGet("/pacientes", GetPacientes).RequireAuthorization();
         group.MapGet("/doctores", GetDoctores).RequireAuthorization();
         group.MapGet("/dashboard", GetDashboardStats).RequireAuthorization();
+        group.MapGet("/pacientes-admin", GetPacientesAdmin).RequireAuthorization();
+        group.MapGet("/pacientes-doctor", GetPacientesDoctor).RequireAuthorization();
     }
 
     private static async Task<IResult> Register(
@@ -203,6 +205,60 @@ public static class AuthEndpoints
                 Usuario = new { d.Usuario.Nombre, d.Usuario.Apellido }
             })
         });
+    }
+    
+    private static async Task<IResult> GetPacientesAdmin(
+        [FromServices] IUsuarioRepository usuarioRepo,
+        HttpContext context)
+    {
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (userRole != "Admin") return Results.Forbid();
+        
+        var pacientes = await usuarioRepo.GetAllAsync();
+        var pacienteList = pacientes.Where(u => u.Rol == RolUsuario.Paciente).Select(p => new
+        {
+            p.Id,
+            p.Email,
+            p.Nombre,
+            p.Apellido,
+            p.Telefono,
+            p.FechaNacimiento,
+            p.FechaCreacion,
+            p.Activo
+        });
+        
+        return Results.Ok(pacienteList);
+    }
+    
+    private static async Task<IResult> GetPacientesDoctor(
+        [FromServices] IUsuarioRepository usuarioRepo,
+        [FromServices] ICitaRepository citaRepo,
+        HttpContext context)
+    {
+        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
+            return Results.Unauthorized();
+        
+        var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (userRole != "Doctor") return Results.Forbid();
+        
+        var citas = await citaRepo.GetAllAsync();
+        var pacienteIds = citas.Where(c => c.DoctorId == userId && c.Estado == EstadoCita.Completada)
+            .Select(c => c.PacienteId).Distinct();
+        
+        var usuarios = await usuarioRepo.GetAllAsync();
+        var pacientes = usuarios.Where(u => pacienteIds.Contains(u.Id)).Select(p => new
+        {
+            p.Id,
+            p.Email,
+            p.Nombre,
+            p.Apellido,
+            p.Telefono,
+            p.FechaNacimiento,
+            TotalCitas = citas.Count(c => c.PacienteId == p.Id && c.DoctorId == userId)
+        });
+        
+        return Results.Ok(pacientes);
     }
 }
 

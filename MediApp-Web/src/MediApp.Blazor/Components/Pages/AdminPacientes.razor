@@ -1,0 +1,105 @@
+@page "/admin/pacientes"
+
+@inject AuthService Auth
+@inject NavigationManager Nav
+@inject ApiService Api
+
+<div class="page-container">
+    <div class="header">
+        <h2>👥 Pacientes</h2>
+        <button class="btn btn-secondary" @onclick='() => Nav.NavigateTo("/")'>← Volver</button>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="loading">Cargando...</div>
+    }
+    else if (Pacientes == null || !Pacientes.Any())
+    {
+        <div class="empty-state">
+            <p>No hay pacientes registrados</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Nacimiento</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Pacientes)
+                    {
+                        <tr>
+                            <td>@p.Nombre</td>
+                            <td>@p.Apellido</td>
+                            <td>@p.Email</td>
+                            <td>@p.Telefono</td>
+                            <td>@(p.FechaNacimiento?.ToString("dd/MM/yyyy") ?? "-")</td>
+                            <td>
+                                <span class="badge @(p.Activo ? "badge-active" : "badge-inactive")">
+                                    @(p.Activo ? "Activo" : "Inactivo")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<PacienteDto>? Pacientes;
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Auth.GetCurrentUserAsync();
+        if (user?.Rol != 3)
+        {
+            Nav.NavigateTo("/");
+            return;
+        }
+        
+        await LoadPacientes();
+        IsLoading = false;
+    }
+
+    private async Task LoadPacientes()
+    {
+        try
+        {
+            Pacientes = await Api.GetAsync<List<PacienteDto>>("api/auth/pacientes-admin");
+        }
+        catch
+        {
+            Pacientes = null;
+        }
+    }
+}
+
+<style>
+    .page-container { padding: 2rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .header h2 { color: #333; margin: 0; }
+    .loading { text-align: center; padding: 2rem; font-size: 1.2rem; color: #666; }
+    .empty-state { text-align: center; padding: 3rem; color: #666; }
+    .table-container { overflow-x: auto; }
+    .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .data-table th { background: #667eea; color: white; padding: 1rem; text-align: left; font-weight: 500; }
+    .data-table td { padding: 1rem; border-bottom: 1px solid #eee; color: #333; }
+    .data-table tr:hover { background: #f5f5f5; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .badge { padding: 0.25rem 0.5rem; border-radius: 10px; font-size: 0.75rem; }
+    .badge-active { background: #d4edda; color: #155724; }
+    .badge-inactive { background: #f8d7da; color: #721c24; }
+</style>
