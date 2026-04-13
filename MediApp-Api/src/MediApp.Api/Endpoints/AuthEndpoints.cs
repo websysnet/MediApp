@@ -45,6 +45,7 @@ public static class AuthEndpoints
             Nombre = request.Nombre,
             Apellido = request.Apellido,
             Telefono = request.Telefono,
+            FechaNacimiento = request.FechaNacimiento,
             Rol = RolUsuario.Paciente,
             FechaCreacion = DateTime.UtcNow,
             Activo = true
@@ -53,7 +54,18 @@ public static class AuthEndpoints
         await usuarioRepo.AddAsync(usuario);
         await usuarioRepo.SaveChangesAsync();
 
-        return Results.Created($"/api/auth/me", new { usuario.Id, usuario.Email, usuario.Rol });
+        return Results.Created($"/api/auth/pacientes-admin", new 
+        { 
+            usuario.Id, 
+            usuario.Email, 
+            usuario.Nombre,
+            usuario.Apellido,
+            usuario.Telefono,
+            usuario.FechaNacimiento,
+            usuario.FechaCreacion,
+            usuario.Activo,
+            usuario.Rol 
+        });
     }
 
     private static async Task<IResult> Login(
@@ -262,5 +274,5 @@ public static class AuthEndpoints
     }
 }
 
-public record RegisterRequest(string Email, string Password, string Nombre, string Apellido, string? Telefono);
+public record RegisterRequest(string Email, string Password, string Nombre, string Apellido, string? Telefono, DateTime? FechaNacimiento = null);
 public record LoginRequest(string Email, string Password);
