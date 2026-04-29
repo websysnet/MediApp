@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/MediApp.Api/MediApp.Api.csproj" />
-    <Project Path="src/MediApp.Application/MediApp.Application.csproj" />
-    <Project Path="src/MediApp.Blazor/MediApp.Blazor.csproj" />
-    <Project Path="src/MediApp.Domain/MediApp.Domain.csproj" />
-    <Project Path="src/MediApp.Infrastructure/MediApp.Infrastructure.csproj" />
-  </Folder>
-</Solution>
